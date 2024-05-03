@@ -7,65 +7,112 @@ prover [""].
 require import AllCore Distr DBool.
 
 type input.
-
 op dinput : input distr.
-
 axiom dinput_fu : is_full dinput.
 axiom dinput_uni : is_uniform dinput.
 axiom dinput_ll : is_lossless dinput.
 
-op prod : input -> input -> int. (* inner product *)
+type output.
 
-op adj: input -> input -> bool. (* adjacent inputs*)
+op F : input -> input -> output. (* functionality to compute *)
 
-(* TODO: define vectors over \pm 1 *)
+op adj: input -> input -> bool. (* adjacent inputs *)
 
-type stateA. 
+type randA.
+op drandA : randA distr.
+axiom drandA_fu : is_full drandA.
+axiom drandA_uni : is_uniform drandA.
+axiom drandA_ll : is_lossless drandA.
 
-type stateB.
+type randB.
+op drandB : randB distr.
+axiom drandB_fu : is_full drandB.
+axiom drandB_uni : is_uniform drandB.
+axiom drandB_ll : is_lossless drandB.
 
 type transcript.
 
-module type CompDiffPriv = {
+op T : input -> randA -> input -> randB -> transcript.
 
-    proc gen_A(x : input) : stateA
+op outA : input -> randA -> transcript -> output.
 
-    proc gen_B(y : input) : stateB
-    
-    proc tr_gen(stA : stateA, stB : stateB) : transcript
+op outB : input -> randB -> transcript -> output.
 
-    proc output_A (stA : stateA, tr : transcript) : int
+(* module type of CDP protocols *)
 
-    proc output_B (stB : stateB, tr : transcript) : int
+module type CDP = {
+    proc init_A (x : input) : unit
+
+    proc init_B (y : input) : unit
+
+    proc exec () : transcript
+
+    proc output_A (tr : transcript) : output
+
+    proc output_B (tr : transcript) : output
 }.
 
-module Correctness(CDP : CompDiffPriv) = {
+module Cor (CDP : CDP) = {
     proc main() : bool = {
-        var x, y : input; var stA : stateA; var stB : stateB; var tr : transcript; var outA, outB : int;
+        var x, y : input; var tr : transcript; var outA: output;
         x <$ dinput;
         y <$ dinput;
-        stA <@ CDP.gen_A(x);
-        stB <@ CDP.gen_B(y);
-        tr <@ CDP.tr_gen(stA, stB);
-        outA <@ CDP.output_A(stA, tr);
-        return outA = prod x y;
+        CDP.init_A(x);
+        CDP.init_B(y);
+        tr <@ CDP.exec();
+        outA <@ CDP.output_A(tr);
+        return outA = F x y;
     }
 }.
 
-module type Adversary = {
+(* standard CDP protocol constructed from T, outA, outB *)
+
+module CompDiffPriv : CDP = {
+    var inpa, inpb : input
+    var ra : randA
+    var rb : randB
+    
+    proc init_A (x : input) : unit = {
+        inpa <- x;
+        ra <$ drandA;
+    }
+
+    proc init_B (y : input) : unit = {
+        inpb <- y;
+        rb <$ drandB;
+    }
+
+    proc exec () : transcript = {
+        return T inpa ra inpb rb;
+    }
+
+    proc output_A (tr : transcript) : output = {
+        return outA inpa ra tr;
+    }
+
+    proc output_B (tr : transcript) : output = {
+        return outB inpb rb tr;
+    }
+}.
+
+(* module type of CDP adversaries *)
+
+module type ADV = {
     proc choose() : input * input * input (* Adversary chooses x and adjacent y_1, y_2 *)
     proc guess(tr : transcript) : bool
 }.
 
-module RelaxedPrivacy(CDP : CompDiffPriv, Adv: Adversary) = {
+module RelaxedPriv(Adv: ADV) = {
+    module CDP = CompDiffPriv
+
     proc main() : bool = {
         var b, b' : bool;
-        var x, y0, y1 : input; var stA : stateA; var stB : stateB; var tr : transcript;
+        var x, y0, y1 : input; var tr : transcript;
         (x, y0, y1) <@ Adv.choose();
-        stA <@ CDP.gen_A(x);
+        CDP.init_A(x);
         b <$ {0,1};
-        stB <@ CDP.gen_B(b? y1 : y0);
-        tr <@ CDP.tr_gen(stA, stB);
+        CDP.init_B(b? y1 : y0);
+        tr <@ CDP.exec();
         b' <@ Adv.guess(tr);
         return (adj y0 y1) /\ b = b';
     }

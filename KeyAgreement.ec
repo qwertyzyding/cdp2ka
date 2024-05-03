@@ -14,42 +14,42 @@ type transcript. (* protocol transcript *)
 
 type key. (* Alice & Bob's agreed key *)
 
-module type KeyAgreement = {
+module type KA = {
 
-    proc rand_gen_A() : randA
+    proc init_A() : randA
 
-    proc rand_gen_B() : randB
+    proc init_B() : randB
     
-    proc tr_gen(ra : randA, rb : randB) : transcript
+    proc exec() : transcript
 
-    proc key_gen_A (ra : randA, tr : transcript) : key
+    proc key_gen_A (tr : transcript) : key
 
-    proc key_gen_B (rb : randB, tr : transcript) : key
+    proc key_gen_B (tr : transcript) : key
 }.
 
-module Correctness(KA : KeyAgreement) = {
+module Cor(KA : KA) = {
     proc main() : bool = {
-        var ra : randA; var rb : randB; var tr : transcript; var ka, kb : key;
-        ra <@ KA.rand_gen_A();
-        rb <@ KA.rand_gen_B();
-        tr <@ KA.tr_gen(ra, rb);
-        ka <@ KA.key_gen_A(ra, tr);
-        kb <@ KA.key_gen_B(rb, tr);
+        var tr : transcript; var ka, kb : key;
+        KA.init_A();
+        KA.init_B();
+        tr <@ KA.exec();
+        ka <@ KA.key_gen_A(tr);
+        kb <@ KA.key_gen_B(tr);
         return ka = kb;
     }
 }.
 
-module type Adversary = {
+module type ADV = {
     proc guess(tr : transcript) : key
 }.
 
-module Security(KA : KeyAgreement, Adv: Adversary) = {
+module Sec(KA : KA, Adv: ADV) = {
     proc main() : bool = {
-        var ra : randA; var rb : randB; var tr : transcript; var ka, k : key;
-        ra <@ KA.rand_gen_A();
-        rb <@ KA.rand_gen_B();
-        tr <@ KA.tr_gen(ra, rb);
-        ka <@ KA.key_gen_A(ra, tr);
+        var tr : transcript; var ka, k : key;
+        KA.init_A();
+        KA.init_B();
+        tr <@ KA.exec();
+        ka <@ KA.key_gen_A(tr);
         k <@ Adv.guess(tr);
         return k = ka;
     }

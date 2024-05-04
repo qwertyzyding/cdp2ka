@@ -16,9 +16,9 @@ type key. (* Alice & Bob's agreed key *)
 
 module type KA = {
 
-    proc init_A() : randA
+    proc init_A() : unit
 
-    proc init_B() : randB
+    proc init_B() : unit
     
     proc exec() : transcript
 
@@ -27,7 +27,7 @@ module type KA = {
     proc key_gen_B (tr : transcript) : key
 }.
 
-module Cor(KA : KA) = {
+module Cor_KA(KA : KA) = {
     proc main() : bool = {
         var tr : transcript; var ka, kb : key;
         KA.init_A();

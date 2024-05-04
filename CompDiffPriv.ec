@@ -52,7 +52,7 @@ module type CDP = {
     proc output_B (tr : transcript) : output
 }.
 
-module Cor (CDP : CDP) = {
+module Cor_CDP (CDP : CDP) = {
     proc main() : bool = {
         var x, y : input; var tr : transcript; var outA: output;
         x <$ dinput;

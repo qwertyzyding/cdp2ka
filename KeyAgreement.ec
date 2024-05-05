@@ -45,12 +45,12 @@ module type ADV_KA = {
 
 module Sec(KA : KA, Adv: ADV_KA) = {
     proc main() : bool = {
-        var tr : transcript; var ka, k : key;
+        var tr : transcript; var kb, k : key;
         KA.init_A();
         KA.init_B();
         tr <@ KA.exec();
-        ka <@ KA.key_gen_A(tr);
+        kb <@ KA.key_gen_B(tr);
         k <@ Adv.guess(tr);
-        return k = ka;
+        return k = kb;
     }
 }.

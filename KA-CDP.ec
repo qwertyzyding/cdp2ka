@@ -257,6 +257,38 @@ qed.
 
 local lemma G1_CDP &m : Pr[G1(KeyAgr, Adv).main() @ &m : res] <= Pr[RelaxedPriv(Adv2CDPA(Adv)).main() @ &m : res].
 proof.
+byequiv => //; proc.
+inline{1}*.
+inline{2}*.
+auto.
+swap{2} 10 -9.
+swap{2} 10 -5.
+swap{2} 13 -7.
+swap{1} 4 3.
+seq 5 8 : (x{1} = Adv2CDPA.x{2} /\ r{1} = Adv2CDPA.r{2} /\ ra_CDP{1} = CompDiffPriv.ra{2} /\ rb_CDP{1} = CompDiffPriv.rb{2} /\ (r{1} <> zerov => Adv2CDPA.y{2} = (b{2} ? y{1} : (y{1} +^ (unitv Adv2CDPA.i{2}))))).
+swap{1} 4 1.
+swap{2} 3 5.
+rnd (fun z => b{2} ? z : (z +^ (unitv Adv2CDPA.i{2}))).
+seq 5 5 : (x{1} = Adv2CDPA.x{2} /\ r{1} = Adv2CDPA.r{2} /\ ra_CDP{1} = CompDiffPriv.ra{2} /\ rb_CDP{1} = CompDiffPriv.rb{2}).
+auto.
+while{2} ((0 <= Adv2CDPA.i{2} <= vec_len) /\ ((Adv2CDPA.i{2} < vec_len /\ Adv2CDPA.r{2}.[Adv2CDPA.i{2}]) \/ forall (j : int), 0 <= j < Adv2CDPA.i{2} => !Adv2CDPA.r{2}.[j])) (vec_len - Adv2CDPA.i{2}).
+auto.
+progress => /=.
+smt.
+smt.
+right.
+move => j range_j.
+case (j < Adv2CDPA.i{hr}); smt.
+smt.
+auto.
+progress => //.
+by rewrite ltzW gt0_vec_len.
+smt.
+smt.
+smt(xorvK xorv0 xorvA).
+call (_ : true).
+wp.
+auto.
 admit.
 qed.
 

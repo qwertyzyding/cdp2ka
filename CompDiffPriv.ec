@@ -97,12 +97,12 @@ module CompDiffPriv : CDP = {
 
 (* module type of CDP adversaries *)
 
-module type ADV = {
+module type ADV_CDP = {
     proc choose() : input * input * input (* Adversary chooses x and adjacent y_1, y_2 *)
     proc guess(tr : transcript) : bool
 }.
 
-module RelaxedPriv(Adv: ADV) = {
+module RelaxedPriv(Adv: ADV_CDP) = {
     module CDP = CompDiffPriv
 
     proc main() : bool = {

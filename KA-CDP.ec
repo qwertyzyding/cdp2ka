@@ -180,25 +180,90 @@ module KeyAgr : KA = {
 }.
 
 
-(* proving correctness of KA *)
+(* proving correctness of KA -- correctness of CDP implies correctness of KA *)
 
-lemma correctness &m: Pr[Cor_CDP(CompDiffPriv).main() @ &m : res] <= Pr [Cor_KA(KeyAgr).main() @ &m : res].
+lemma correctness &m : Pr [Cor_KA(KeyAgr).main() @ &m : res] = Pr[Cor_CDP(CompDiffPriv).main() @ &m : res].
 proof.
-byequiv => //; proc.
-inline{1}*.
-inline{2}*.
-auto.
-swap{1} 5 -2.
-swap{2} 4 1.
-auto.
-swap{2} 2 -1.
-swap{2} 3 1.
-rnd.
-rnd.
-rnd.
-auto.
-simplify.
-move => r _ xL _ yL _ raL _ rbL _ outA_CDP.
-rewrite outA_CDP.
-smt(subset_hd).
+    byequiv => //; proc.
+    inline{1}*.
+    inline{2}*.
+    auto.
+    swap{2} 5 -2.
+    swap{1} 4 1.
+    swap{1} 2 -1.
+    swap{1} 3 1.
+    auto => /=.
+    move => r _ xL _ yL _ raL _ rbL _.
+    smt(subset_hd).
 qed.
+
+
+(* proving security of KA *)
+
+(* Adv for CDP out of Adv for KeyAgr *)
+
+module Adv2CDPA (Adv : ADV_KA) : ADV_CDP = {
+    var x, y, r : vec
+    var i : int
+
+    proc choose() : vec * vec * vec = {
+        x <$ dvec;
+        y <$ dvec;
+        r <$ dvec;
+        i <- 0;
+        while (i < vec_len && !r.[i]) i <- i + 1;
+        return (x, y +^ (unitv i), y);
+    }
+
+    proc guess(tr : transc_CDP) : bool = {
+        var out, outi : int;
+        var tr_KA : transc_KA;
+        var ri : vec;
+        tr_KA <- (andv x r, r, andv y (invv r), tr);
+        ri <- r +^ (unitv i);
+        out <@ Adv.guess(tr_KA);
+        outi <- hd (andv x ri) (andv y ri);
+        return out = outi;
+    }
+}.
+
+section.
+
+declare module Adv <: ADV_KA{-Adv2CDPA, -CompDiffPriv, -KeyAgr}.
+
+declare axiom Adv_guess_ll : islossless Adv.guess.
+
+(* Game 0: KA game *)
+(* Game 1: remove the case r = 0 *)
+
+module G1(KA : KA, Adv : ADV_KA) = {
+    proc main() : bool = {
+        var tr : transc_KA; var ka, k : int;
+        KA.init_A();
+        KA.init_B();
+        tr <@ KA.exec();
+        ka <@ KA.key_gen_A(tr);
+        k <@ Adv.guess(tr);
+        return k = ka /\ tr.`2 <> zerov;
+    }
+}.
+
+local lemma KA_G1 &m : Pr[Sec(KeyAgr, Adv).main() @ &m : res] <= Pr[G1(KeyAgr, Adv).main() @ &m : res] + 1%r / (2 ^ vec_len)%r.
+proof.
+admit.
+qed.
+
+(* Game 2: CDP game *)
+
+local lemma G1_CDP &m : Pr[G1(KeyAgr, Adv).main() @ &m : res] <= Pr[RelaxedPriv(Adv2CDPA(Adv)).main() @ &m : res].
+proof.
+admit.
+qed.
+
+(* summing up the security loss *)
+
+lemma security &m : Pr[Sec(KeyAgr, Adv).main() @ &m : res] <= Pr[RelaxedPriv(Adv2CDPA(Adv)).main() @ &m : res] + 1%r / (2 ^ vec_len)%r.
+proof.
+smt(KA_G1 G1_CDP).
+qed.
+end section.

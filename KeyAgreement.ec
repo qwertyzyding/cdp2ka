@@ -39,11 +39,11 @@ module Cor_KA(KA : KA) = {
     }
 }.
 
-module type ADV = {
+module type ADV_KA = {
     proc guess(tr : transcript) : key
 }.
 
-module Sec(KA : KA, Adv: ADV) = {
+module Sec(KA : KA, Adv: ADV_KA) = {
     proc main() : bool = {
         var tr : transcript; var ka, k : key;
         KA.init_A();

@@ -146,6 +146,32 @@ proof.
     by rewrite suffix_sum.
 qed.
 
+lemma bigi_neg (m n : int) F : - bigi predT F m n = bigi predT (fun (i : int) => - F i) m n.
+proof.
+have : bigi predT F m n + bigi predT (fun (i : int) => - F i) m n = 0.
+rewrite -big_split.
+smt.
+smt.
+qed.
+
+lemma neighbor_norm0 x i : 0 <= i < vec_len => `|norm0 (x +^ (unitv i)) - norm0 x| = 1.
+proof.
+move => [ge_i le_i].
+case (x.[i]) => xi.
+have : norm0 x - norm0 (x +^ (unitv i)) = norm0 (unitv i).
+rewrite 3!norm0E bigi_neg -big_split /=.
+rewrite 2!big_int.
+apply eq_bigr => /= i0 [ge_i0 le_i0].
+smt(unitvE xorvE).
+smt(unitv_norm0).
+have : norm0 (x +^ (unitv i)) - norm0 x = norm0 (unitv i).
+rewrite 3!norm0E bigi_neg -big_split /=.
+rewrite 2!big_int.
+apply eq_bigr => /= i0 [ge_i0 le_i0].
+smt(unitvE xorvE).
+smt(unitv_norm0).
+qed.
+
 lemma norm2idx x i : 0 <= i < vec_len => b2i x.[i] = norm0 (andv x (unitv i)).
 proof.
     move => [ge_i le_i].
@@ -203,7 +229,19 @@ proof.
     smt(subset_hd).
 qed.
 
+lemma neighbor_hd x y i : 0 <= i < vec_len => hd x y <> hd x (y +^ (unitv i)).
+proof. smt(xorvA neighbor_norm0). qed.
+
 op adj(x, y : vec) : bool = ((hd x y) = 1).
+
+lemma adjE x y : adj x y = ((hd x y) = 1).
+proof. by rewrite /adj. qed.
+
+lemma adjC : commutative adj.
+proof.
+move => x y.
+by rewrite 2!adjE hdC.
+qed.
 
 lemma adj_vec x i : 0 <= i < vec_len => adj x (x +^ (unitv i)).
 proof.

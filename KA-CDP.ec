@@ -5,7 +5,7 @@
 prover quorum=2 ["Alt-Ergo" "Z3"].
 timeout 2.
 
-require import AllCore Distr DBool List Mu_mem.
+require import AllCore Distr Bool DBool List Mu_mem.
 require import StdBigop. import Bigreal BRA.
 require import StdOrder. import RealOrder.
 require import StdRing. import RField.
@@ -207,11 +207,17 @@ module Adv2CDPA (Adv : ADV_KA) : ADV_CDP = {
     var i : int
 
     proc choose() : vec * vec * vec = {
+        var mask : vec;
         x <$ dvec;
         y <$ dvec;
         r <$ dvec;
         i <- 0;
-        while (i < vec_len && !r.[i]) i <- i + 1;
+        if (r <> zerov) {
+            while (!r.[i]) i <- i + 1;
+            mask <- unitv i;
+        } else {
+            mask <- zerov;
+        }
         return (x, y +^ (unitv i), y);
     }
 
@@ -223,7 +229,7 @@ module Adv2CDPA (Adv : ADV_KA) : ADV_CDP = {
         ri <- r +^ (unitv i);
         out <@ Adv.guess(tr_KA);
         outi <- hd (andv x ri) (andv y ri);
-        return out = outi;
+        return b2i (x.[i] ^^ y.[i]) = (out - outi);
     }
 }.
 
@@ -238,13 +244,13 @@ declare axiom Adv_guess_ll : islossless Adv.guess.
 
 module G1(KA : KA, Adv : ADV_KA) = {
     proc main() : bool = {
-        var tr : transc_KA; var ka, k : int;
+        var tr : transc_KA; var kb, k : int;
         KA.init_A();
         KA.init_B();
         tr <@ KA.exec();
-        ka <@ KA.key_gen_A(tr);
+        kb <@ KA.key_gen_B(tr);
         k <@ Adv.guess(tr);
-        return k = ka /\ tr.`2 <> zerov;
+        return k = kb /\ tr.`2 <> zerov;
     }
 }.
 
@@ -261,16 +267,49 @@ byequiv => //; proc.
 inline{1}*.
 inline{2}*.
 auto.
-swap{2} 10 -9.
-swap{2} 10 -5.
-swap{2} 13 -7.
-swap{1} 4 3.
-seq 5 8 : (x{1} = Adv2CDPA.x{2} /\ r{1} = Adv2CDPA.r{2} /\ ra_CDP{1} = CompDiffPriv.ra{2} /\ rb_CDP{1} = CompDiffPriv.rb{2} /\ (r{1} <> zerov => Adv2CDPA.y{2} = (b{2} ? y{1} : (y{1} +^ (unitv Adv2CDPA.i{2}))))).
+swap{2} 9 -5.
+swap{2} 13 -8.
+swap{2} 11 -10.
+swap{1} 4 2.
+call (_ : true).
+wp.
+
+seq 5 8 : (x{1} = Adv2CDPA.x{2} /\ r{1} = Adv2CDPA.r{2} /\ ra_CDP{1} = CompDiffPriv.ra{2} /\ rb_CDP{1} = CompDiffPriv.rb{2} /\ (r{1} = zerov \/ r{1}.[Adv2CDPA.i{2}]) /\ Adv2CDPA.y{2} = (b{2} ? y{1} : (y{1} +^ (unitv Adv2CDPA.i{2}))) /\ 0 <= Adv2CDPA.i{2} < vec_len).
 swap{1} 4 1.
 swap{2} 3 5.
 rnd (fun z => b{2} ? z : (z +^ (unitv Adv2CDPA.i{2}))).
-seq 5 5 : (x{1} = Adv2CDPA.x{2} /\ r{1} = Adv2CDPA.r{2} /\ ra_CDP{1} = CompDiffPriv.ra{2} /\ rb_CDP{1} = CompDiffPriv.rb{2}).
+seq 4 6 : (x{1} = Adv2CDPA.x{2} /\ r{1} = Adv2CDPA.r{2} /\ ra_CDP{1} = CompDiffPriv.ra{2} /\ rb_CDP{1} = CompDiffPriv.rb{2} /\ Adv2CDPA.i{2} = 0).
 auto.
+if{2}.
+admit.
+
+(* r = zerov *)
+auto.
+progress => //.
+smt(xorvK xorv0 xorvA).
+smt(xorvK xorv0 xorvA).
+apply gt0_vec_len.
+
+(* r <> zerov *)
+auto.
+progress.
+admit. (* TODO : prove r[i]=1 --> x +^ invv(r[i]) same*)
+smt(xorvK xorv0 xorvA).
+admit. (* TODO : prove (glob Adv){1} = (glob Adv){2} *)
+case (b{2}); move => _; smt(xorvK xorv0 xorvA adjC adj_vec).
+
+(* prove goal *)
+case (b{2}) => _ /=.
+smt(hd2idx).
+rewrite (hd2idx Adv2CDPA.x{2} (y{1} +^ unitv Adv2CDPA.i{2}) Adv2CDPA.r{2} Adv2CDPA.i{2}).
+smt.
+rewrite andvDl.
+have : andv (unitv Adv2CDPA.i{2}) Adv2CDPA.r{2} = unitv Adv2CDPA.i{2}.
+smt(andvC andvunit).
+smt(neighbor_hd).
+
+(* while part backup*)
+(*
 while{2} ((0 <= Adv2CDPA.i{2} <= vec_len) /\ ((Adv2CDPA.i{2} < vec_len /\ Adv2CDPA.r{2}.[Adv2CDPA.i{2}]) \/ forall (j : int), 0 <= j < Adv2CDPA.i{2} => !Adv2CDPA.r{2}.[j])) (vec_len - Adv2CDPA.i{2}).
 auto.
 progress => /=.
@@ -282,14 +321,12 @@ case (j < Adv2CDPA.i{hr}); smt.
 smt.
 auto.
 progress => //.
-by rewrite ltzW gt0_vec_len.
-smt.
+smt(gt0_vec_len).
+right; smt.
 smt.
 smt(xorvK xorv0 xorvA).
-call (_ : true).
-wp.
-auto.
-admit.
+smt(xorvK xorv0 xorvA).
+admit. *)
 qed.
 
 (* summing up the security loss *)

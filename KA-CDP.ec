@@ -239,6 +239,8 @@ declare module Adv <: ADV_KA{-Adv2CDPA, -CompDiffPriv, -KeyAgr}.
 
 declare axiom Adv_guess_ll : islossless Adv.guess.
 
+declare axiom Adv_stateless (g1 g2 : glob Adv) : g1 = g2.
+
 (* Game 0: KA game *)
 (* Game 1: remove the case r = 0 *)
 
@@ -281,7 +283,16 @@ rnd (fun z => b{2} ? z : (z +^ (unitv Adv2CDPA.i{2}))).
 seq 4 6 : (x{1} = Adv2CDPA.x{2} /\ r{1} = Adv2CDPA.r{2} /\ ra_CDP{1} = CompDiffPriv.ra{2} /\ rb_CDP{1} = CompDiffPriv.rb{2} /\ Adv2CDPA.i{2} = 0).
 auto.
 if{2}.
-admit.
+auto.
+while{2} ((0 <= Adv2CDPA.i{2} < vec_len) /\ Adv2CDPA.r{2} <> zerov /\ (forall (j : int), 0 <= j < Adv2CDPA.i{2} => !Adv2CDPA.r{2}.[j])) (vec_len - Adv2CDPA.i{2}).
+auto.
+progress.
+smt.
+admit. (* TODO : prove r=zerov <=> forall 0<=j<vec_len r.[j]=0 *)
+case (j = Adv2CDPA.i{hr}); smt.
+smt.
+auto.
+progress; smt(xorvK xorv0 xorvA gt0_vec_len).
 
 (* r = zerov *)
 auto.
@@ -295,7 +306,7 @@ auto.
 progress.
 admit. (* TODO : prove r[i]=1 --> x +^ invv(r[i]) same*)
 smt(xorvK xorv0 xorvA).
-admit. (* TODO : prove (glob Adv){1} = (glob Adv){2} *)
+apply Adv_stateless.
 case (b{2}); move => _; smt(xorvK xorv0 xorvA adjC adj_vec).
 
 (* prove goal *)

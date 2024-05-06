@@ -256,6 +256,36 @@ module G1(KA : KA, Adv : ADV_KA) = {
     }
 }.
 
+local lemma KA_G1_main : equiv [Sec(KeyAgr, Adv).main ~ G1(KeyAgr, Adv).main : true ==> ={KeyAgr.ra} /\ (KeyAgr.ra{1}.`2 <> zerov => ={res})].
+proof.
+proc.
+inline*.
+call (_ : true).
+auto.
+progress.
+apply Adv_stateless.
+by rewrite H4.
+qed.
+
+local lemma KA_main_r0_ub &m : Pr[Sec(KeyAgr, Adv).main() @ &m : KeyAgr.ra.`2 = zerov] <= 1%r / (2 ^ vec_len)%r.
+proof.
+byphoare => //.
+proc.
+inline*.
+swap 2 -1.
+seq 1 : (r = zerov) (1%r / (2 ^ vec_len)%r) (1%r) (((2 ^ vec_len)-1)%r / (2 ^ vec_len)%r) (0%r).
+auto.
+rnd; skip; progress.
+have : mu1 dvec zerov = mu dvec (fun x => x=zerov).
+by apply eq_distr.
+smt(mu1_dvec).
+auto.
+hoare.
+call (_ : true).
+auto.
+trivial.
+qed.
+
 local lemma KA_G1 &m : Pr[Sec(KeyAgr, Adv).main() @ &m : res] <= Pr[G1(KeyAgr, Adv).main() @ &m : res] + 1%r / (2 ^ vec_len)%r.
 proof.
 admit.

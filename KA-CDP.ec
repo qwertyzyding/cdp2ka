@@ -218,7 +218,7 @@ module Adv2CDPA (Adv : ADV_KA) : ADV_CDP = {
         } else {
             mask <- zerov;
         }
-        return (x, y +^ (unitv i), y);
+        return (x, y +^ mask, y);
     }
 
     proc guess(tr : transc_CDP) : bool = {
@@ -265,85 +265,65 @@ qed.
 
 local lemma G1_CDP &m : Pr[G1(KeyAgr, Adv).main() @ &m : res] <= Pr[RelaxedPriv(Adv2CDPA(Adv)).main() @ &m : res].
 proof.
-byequiv => //; proc.
-inline{1}*.
-inline{2}*.
-auto.
-swap{2} 9 -5.
-swap{2} 13 -8.
-swap{2} 11 -10.
-swap{1} 4 2.
-call (_ : true).
-wp.
+    byequiv => //; proc.
+    inline{1}*.
+    inline{2}*.
+    auto.
+    swap{2} 9 -5.
+    swap{2} 13 -8.
+    swap{2} 11 -10.
+    swap{1} 4 2.
+    call (_ : true).
+    wp.
+    seq 5 8 : (x{1} = Adv2CDPA.x{2} /\ r{1} = Adv2CDPA.r{2} /\ ra_CDP{1} = CompDiffPriv.ra{2} /\ rb_CDP{1} = CompDiffPriv.rb{2} /\ (r{1} = zerov \/ r{1}.[Adv2CDPA.i{2}]) /\ Adv2CDPA.y{2} = ((b{2} \/ r{1} = zerov) ? y{1} : (y{1} +^ (unitv Adv2CDPA.i{2}))) /\ 0 <= Adv2CDPA.i{2} < vec_len /\ mask{2} = ((r{1} = zerov) ? zerov : unitv Adv2CDPA.i{2})).
+    swap{1} 4 1.
+    swap{2} 3 5.
+    rnd (fun z => (b{2} \/ r{1} = zerov) ? z : (z +^ (unitv Adv2CDPA.i{2}))).
+    seq 4 6 : (x{1} = Adv2CDPA.x{2} /\ r{1} = Adv2CDPA.r{2} /\ ra_CDP{1} = CompDiffPriv.ra{2} /\ rb_CDP{1} = CompDiffPriv.rb{2} /\ Adv2CDPA.i{2} = 0).
+    auto.
+    if{2}.
+    auto.
+    while{2} ((0 <= Adv2CDPA.i{2} < vec_len) /\ Adv2CDPA.r{2} <> zerov /\ (forall (j : int), 0 <= j < Adv2CDPA.i{2} => !Adv2CDPA.r{2}.[j])) (vec_len - Adv2CDPA.i{2}).
+    auto.
+    progress.
+    smt.
+    smt(is_zerov).
+    case (j = Adv2CDPA.i{hr}); smt.
+    smt.
+    auto.
+    progress; smt(xorvK xorv0 xorvA gt0_vec_len).
 
-seq 5 8 : (x{1} = Adv2CDPA.x{2} /\ r{1} = Adv2CDPA.r{2} /\ ra_CDP{1} = CompDiffPriv.ra{2} /\ rb_CDP{1} = CompDiffPriv.rb{2} /\ (r{1} = zerov \/ r{1}.[Adv2CDPA.i{2}]) /\ Adv2CDPA.y{2} = (b{2} ? y{1} : (y{1} +^ (unitv Adv2CDPA.i{2}))) /\ 0 <= Adv2CDPA.i{2} < vec_len).
-swap{1} 4 1.
-swap{2} 3 5.
-rnd (fun z => b{2} ? z : (z +^ (unitv Adv2CDPA.i{2}))).
-seq 4 6 : (x{1} = Adv2CDPA.x{2} /\ r{1} = Adv2CDPA.r{2} /\ ra_CDP{1} = CompDiffPriv.ra{2} /\ rb_CDP{1} = CompDiffPriv.rb{2} /\ Adv2CDPA.i{2} = 0).
-auto.
-if{2}.
-auto.
-while{2} ((0 <= Adv2CDPA.i{2} < vec_len) /\ Adv2CDPA.r{2} <> zerov /\ (forall (j : int), 0 <= j < Adv2CDPA.i{2} => !Adv2CDPA.r{2}.[j])) (vec_len - Adv2CDPA.i{2}).
-auto.
-progress.
-smt.
-smt(is_zerov).
-case (j = Adv2CDPA.i{hr}); smt.
-smt.
-auto.
-progress; smt(xorvK xorv0 xorvA gt0_vec_len).
+    (* r = zerov *)
+    auto.
+    progress => //.
+    apply gt0_vec_len.
 
-(* r = zerov *)
-auto.
-progress => //.
-smt(xorvK xorv0 xorvA).
-smt(xorvK xorv0 xorvA).
-apply gt0_vec_len.
+    (* r <> zerov *)
+    auto.
+    progress.
+    case (Adv2CDPA.r{2} = zerov) => // /=.
+    case (b{2}) => // /=.
+    move => _ r_non_zero.
+    rewrite andvDl (andvC (unitv Adv2CDPA.i{2}) (invv Adv2CDPA.r{2})) andvunit invvE //.
+    smt(xorv0).
+    smt(xorvK xorv0 xorvA).
+    apply Adv_stateless.
+    case (b{2}); move => _; smt(xorvK xorv0 xorvA adjC adj_vec).
 
-(* r <> zerov *)
-auto.
-progress.
-admit. (* TODO : prove r[i]=1 --> x +^ invv(r[i]) same*)
-smt(xorvK xorv0 xorvA).
-apply Adv_stateless.
-case (b{2}); move => _; smt(xorvK xorv0 xorvA adjC adj_vec).
-
-(* prove goal *)
-case (b{2}) => _ /=.
-smt(hd2idx).
-rewrite (hd2idx Adv2CDPA.x{2} (y{1} +^ unitv Adv2CDPA.i{2}) Adv2CDPA.r{2} Adv2CDPA.i{2}).
-smt.
-rewrite andvDl.
-have : andv (unitv Adv2CDPA.i{2}) Adv2CDPA.r{2} = unitv Adv2CDPA.i{2}.
-smt(andvC andvunit).
-smt(neighbor_hd).
-
-(* while part backup*)
-(*
-while{2} ((0 <= Adv2CDPA.i{2} <= vec_len) /\ ((Adv2CDPA.i{2} < vec_len /\ Adv2CDPA.r{2}.[Adv2CDPA.i{2}]) \/ forall (j : int), 0 <= j < Adv2CDPA.i{2} => !Adv2CDPA.r{2}.[j])) (vec_len - Adv2CDPA.i{2}).
-auto.
-progress => /=.
-smt.
-smt.
-right.
-move => j range_j.
-case (j < Adv2CDPA.i{hr}); smt.
-smt.
-auto.
-progress => //.
-smt(gt0_vec_len).
-right; smt.
-smt.
-smt(xorvK xorv0 xorvA).
-smt(xorvK xorv0 xorvA).
-admit. *)
+    (* prove goal *)
+    case (b{2}) => _ /=.
+    smt(hd2idx).
+    rewrite H4 (hd2idx Adv2CDPA.x{2} (y{1} +^ unitv Adv2CDPA.i{2}) Adv2CDPA.r{2} Adv2CDPA.i{2}).
+    smt.
+    rewrite andvDl.
+    have : andv (unitv Adv2CDPA.i{2}) Adv2CDPA.r{2} = unitv Adv2CDPA.i{2}.
+    smt(andvC andvunit).
+    smt(neighbor_hd).
 qed.
 
 (* summing up the security loss *)
 
 lemma security &m : Pr[Sec(KeyAgr, Adv).main() @ &m : res] <= Pr[RelaxedPriv(Adv2CDPA(Adv)).main() @ &m : res] + 1%r / (2 ^ vec_len)%r.
-proof.
-smt(KA_G1 G1_CDP).
-qed.
+proof. smt(KA_G1 G1_CDP). qed.
+
 end section.

@@ -40,11 +40,11 @@ proof. apply Vec.zerowE. qed.
 
 lemma is_zerov (x : vec) : x = zerov <=> (forall j, 0 <= j < vec_len => !x.[j]).
 proof.
-split.
-smt(zerovE).
-move => all_0.
-rewrite Vec.wordP => j [ge_j le_j].
-smt(zerovE).
+    split.
+    smt(zerovE).
+    move => all_0.
+    rewrite Vec.wordP => j [ge_j le_j].
+    smt(zerovE).
 qed.
 
 op onev : vec = Vec.onew.
@@ -157,28 +157,28 @@ qed.
 
 lemma bigi_neg (m n : int) F : - bigi predT F m n = bigi predT (fun (i : int) => - F i) m n.
 proof.
-have : bigi predT F m n + bigi predT (fun (i : int) => - F i) m n = 0.
-rewrite -big_split.
-smt.
-smt.
+    have : bigi predT F m n + bigi predT (fun (i : int) => - F i) m n = 0.
+    rewrite -big_split.
+    smt.
+    smt.
 qed.
 
 lemma neighbor_norm0 x i : 0 <= i < vec_len => `|norm0 (x +^ (unitv i)) - norm0 x| = 1.
 proof.
-move => [ge_i le_i].
-case (x.[i]) => xi.
-have : norm0 x - norm0 (x +^ (unitv i)) = norm0 (unitv i).
-rewrite 3!norm0E bigi_neg -big_split /=.
-rewrite 2!big_int.
-apply eq_bigr => /= i0 [ge_i0 le_i0].
-smt(unitvE xorvE).
-smt(unitv_norm0).
-have : norm0 (x +^ (unitv i)) - norm0 x = norm0 (unitv i).
-rewrite 3!norm0E bigi_neg -big_split /=.
-rewrite 2!big_int.
-apply eq_bigr => /= i0 [ge_i0 le_i0].
-smt(unitvE xorvE).
-smt(unitv_norm0).
+    move => [ge_i le_i].
+    case (x.[i]) => xi.
+    have : norm0 x - norm0 (x +^ (unitv i)) = norm0 (unitv i).
+    rewrite 3!norm0E bigi_neg -big_split /=.
+    rewrite 2!big_int.
+    apply eq_bigr => /= i0 [ge_i0 le_i0].
+    smt(unitvE xorvE).
+    smt(unitv_norm0).
+    have : norm0 (x +^ (unitv i)) - norm0 x = norm0 (unitv i).
+    rewrite 3!norm0E bigi_neg -big_split /=.
+    rewrite 2!big_int.
+    apply eq_bigr => /= i0 [ge_i0 le_i0].
+    smt(unitvE xorvE).
+    smt(unitv_norm0).
 qed.
 
 lemma norm2idx x i : 0 <= i < vec_len => b2i x.[i] = norm0 (andv x (unitv i)).

@@ -61,7 +61,7 @@ module Cor_CDP (CDP : CDP) = {
         CDP.init_B(y);
         tr <@ CDP.exec();
         outA <@ CDP.output_A(tr);
-        return outA = F x y;
+        return outA = F x y;  (* can also be defined w.l.o.g. as outB = F x y or outA = outB = F x y *)
     }
 }.
 

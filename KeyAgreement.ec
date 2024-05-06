@@ -51,6 +51,6 @@ module Sec(KA : KA, Adv: ADV_KA) = {
         tr <@ KA.exec();
         kb <@ KA.key_gen_B(tr);
         k <@ Adv.guess(tr);
-        return k = kb;
+        return k = kb; (* can also be define w.l.o.g. as k=ka or k=ka=kb *)
     }
 }.

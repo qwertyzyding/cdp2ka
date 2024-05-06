@@ -38,6 +38,15 @@ op zerov : vec = Vec.zerow.
 lemma zerovE i : zerov.[i] = false.
 proof. apply Vec.zerowE. qed.
 
+lemma is_zerov (x : vec) : x = zerov <=> (forall j, 0 <= j < vec_len => !x.[j]).
+proof.
+split.
+smt(zerovE).
+move => all_0.
+rewrite Vec.wordP => j [ge_j le_j].
+smt(zerovE).
+qed.
+
 op onev : vec = Vec.onew.
 
 lemma onevE i : onev.[i] = (0 <= i < vec_len).

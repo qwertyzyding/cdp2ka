@@ -288,7 +288,7 @@ while{2} ((0 <= Adv2CDPA.i{2} < vec_len) /\ Adv2CDPA.r{2} <> zerov /\ (forall (j
 auto.
 progress.
 smt.
-admit. (* TODO : prove r=zerov <=> forall 0<=j<vec_len r.[j]=0 *)
+smt(is_zerov).
 case (j = Adv2CDPA.i{hr}); smt.
 smt.
 auto.

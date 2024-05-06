@@ -18,6 +18,7 @@ check() {
   fi;
 }
 
+check BitVec.ec
 check KeyAgreement.ec
 check CompDiffPriv.ec
 check KA-CDP.ec
